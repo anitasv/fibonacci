@@ -89,17 +89,17 @@ public class Main {
         return x + y;
     };
 
-    private void printList(LazyList<Integer> list, int count) {
-        while (count-- > 0 && list.car.get() != null) {
-            System.out.println(list.car.get());
-            list = list.cdr.get();
+    private void printList(Supplier<LazyList<Integer>> list, int count) {
+        while (count-- > 0 && list.get().car.get() != null) {
+            System.out.println(list.get().car.get());
+            list = list.get().cdr;
         }
     }
 
     void run() {
         Concept<LazyList<Integer>> lazyFib =
                 new Concept<>(fib -> cons(0, cons(1, zip(sum, fib, tail(fib)))));
-        printList(lazyFib.get(), 10);
+        printList(lazyFib, 100);
     }
 
     public static void main(String[] args) {
