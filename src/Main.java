@@ -78,10 +78,19 @@ public class Main {
         return mem(() -> operator.apply(op1.get(), op2.get()));
     }
 
+    <T> Supplier<T> lazy(Supplier<Supplier<T>> action) {
+        return mem(() -> action.get().get());
+    }
+
+    <T> Supplier<T> concept(Function<Concept<T>, Supplier<T>> lazy) {
+        return new Concept<>(lazy);
+    }
+
     <T> Supplier<LazyList<T>> zip(BinaryOperator<T> reducer,
                                   Supplier<LazyList<T>> op1,
                                   Supplier<LazyList<T>> op2) {
-        return cons2(apply(reducer, first(op1), first(op2)), mem(() -> zip(reducer, tail(op1), tail(op2)).get()));
+        return cons2(apply(reducer, first(op1), first(op2)),
+                lazy(() -> zip(reducer, tail(op1), tail(op2))));
     }
 
     BinaryOperator<Integer> sum = (x, y) -> {
@@ -97,9 +106,9 @@ public class Main {
     }
 
     void run() {
-        Concept<LazyList<Integer>> lazyFib =
-                new Concept<>(fib -> cons(0, cons(1, zip(sum, fib, tail(fib)))));
-        printList(lazyFib, 100);
+        Supplier<LazyList<Integer>> lazyFib =
+                concept(fib -> cons(0, cons(1, zip(sum, fib, tail(fib)))));
+        printList(lazyFib, 10);
     }
 
     public static void main(String[] args) {
