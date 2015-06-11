@@ -98,10 +98,12 @@ public class Main {
         return x + y;
     };
 
-    private void printList(Supplier<LazyList<Integer>> list, int count) {
-        while (count-- > 0 && list.get().car.get() != null) {
-            System.out.println(list.get().car.get());
-            list = list.get().cdr;
+
+    private <T> void printList(Supplier<LazyList<T>> list, int count) {
+        T val;
+        while (count-- > 0 && ((val = first(list).get()) != null)) {
+            System.out.println(val);
+            list = tail(list);
         }
     }
 
