@@ -1,12 +1,17 @@
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Main {
 
-    class DelayedSupplier<T> implements Supplier<T> {
+    class Concept<T> implements Supplier<T> {
 
-        Supplier<T> actual;
+        private final Supplier<T> actual;
+
+        Concept(Function<Concept<T>, Supplier<T>> actualFunc) {
+            this.actual = actualFunc.apply(this);
+        }
 
         @Override
         public T get() {
@@ -16,14 +21,14 @@ public class Main {
 
     class CachedSupplier<T> implements Supplier<T> {
 
-        final Supplier<T> actual;
+        private final Supplier<T> actual;
 
         CachedSupplier(Supplier<T> actual) {
             this.actual = actual;
         }
 
-        volatile T value;
-        final AtomicBoolean computed = new AtomicBoolean(false);
+        private volatile T value;
+        private final AtomicBoolean computed = new AtomicBoolean(false);
 
         @Override
         public T get() {
@@ -36,9 +41,9 @@ public class Main {
 
     class LazyList<T> {
 
-        final Supplier<T> car;
+        public final Supplier<T> car;
 
-        final Supplier<LazyList<T>> cdr;
+        public final Supplier<LazyList<T>> cdr;
 
         LazyList(Supplier<T> car, Supplier<LazyList<T>> cdr) {
             this.car = car;
@@ -47,6 +52,9 @@ public class Main {
     }
 
     <T> Supplier<T> mem(Supplier<T> actual) {
+        if (actual instanceof CachedSupplier) {
+            return actual;
+        }
         return new CachedSupplier<T>(actual);
     }
 
@@ -81,17 +89,17 @@ public class Main {
         return x + y;
     };
 
-    void run() {
-        DelayedSupplier<LazyList<Integer>> fib = new DelayedSupplier<>();
-        fib.actual = cons(0, cons(1, zip(sum, fib, tail(fib))));
-        printList(fib.get(), 10);
-    }
-
     private void printList(LazyList<Integer> list, int count) {
         while (count-- > 0 && list.car.get() != null) {
             System.out.println(list.car.get());
             list = list.cdr.get();
         }
+    }
+
+    void run() {
+        Concept<LazyList<Integer>> lazyFib =
+                new Concept<>(fib -> cons(0, cons(1, zip(sum, fib, tail(fib)))));
+        printList(lazyFib.get(), 10);
     }
 
     public static void main(String[] args) {
